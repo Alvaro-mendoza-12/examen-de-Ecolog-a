@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Exámenes v2 – Ecología y Desarrollo Sostenible</title>
+  <meta name="description" content="Simulador de exámenes de Ecología y Desarrollo Sostenible USAT. Practica con 20 exámenes de 20 preguntas cada uno.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ════════ HOME SCREEN ════════ -->
+  <div id="screen-home" class="screen active">
+    <header class="hero">
+      <div class="hero-bg-glow glow-1"></div>
+      <div class="hero-bg-glow glow-2"></div>
+      <div class="hero-inner">
+        <div class="badge">🎓 USAT · Ecología y Desarrollo Sostenible</div>
+        <h1>Simulador de<br><span class="gradient-text">Exámenes</span></h1>
+        <p class="hero-subtitle">20 exámenes · 20 preguntas únicas · Nota sobre 20</p>
+        <div class="stats-bar">
+          <div class="stat-item"><span class="stat-num" id="stat-completed">0</span><span class="stat-label">Completados</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat-item"><span class="stat-num" id="stat-best">—</span><span class="stat-label">Mejor nota</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat-item"><span class="stat-num">20</span><span class="stat-label">Exámenes</span></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="exams-grid-container">
+      <h2 class="section-title">Selecciona un Examen</h2>
+      <div class="exams-grid" id="exams-grid">
+        <!-- Cards injected by JS -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ════════ EXAM SCREEN ════════ -->
+  <div id="screen-exam" class="screen">
+    <div class="exam-layout">
+      <!-- Top bar -->
+      <div class="exam-topbar glass">
+        <button class="btn-icon" id="btn-exit-exam" title="Salir del examen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </button>
+        <div class="exam-title-area">
+          <span class="exam-tag" id="exam-tag">Examen 01</span>
+        </div>
+        <div class="timer-wrap" id="timer-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span id="timer-display">35:00</span>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-outer">
+        <div class="progress-inner" id="progress-bar"></div>
+      </div>
+
+      <!-- Question area -->
+      <div class="question-area">
+        <div class="question-meta">
+          <span class="q-counter" id="q-counter">Pregunta 1 de 20</span>
+          <span class="q-pts">1 punto</span>
+        </div>
+        <div class="question-card glass">
+          <p class="question-text" id="question-text">Cargando pregunta...</p>
+          <div class="written-answer-area" id="answer-container">
+            <p class="input-label">Escribe tu respuesta:</p>
+            <input type="text" id="user-input" class="glass-input" placeholder="Escribe aquí..." autocomplete="off">
+            <p class="input-hint">Presiona Enter para continuar</p>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-outline" id="btn-prev">← Anterior</button>
+          <span class="dots-row" id="dots-row"></span>
+          <button class="btn-primary" id="btn-next">Siguiente →</button>
+        </div>
+        <div class="submit-row">
+          <button class="btn-submit" id="btn-submit">Terminar Examen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ RESULTS SCREEN ════════ -->
+  <div id="screen-results" class="screen">
+    <div class="results-layout">
+      <div class="results-hero glass">
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 200 200" width="180" height="180">
+            <circle class="ring-bg" cx="100" cy="100" r="82" fill="none" stroke-width="14"/>
+            <circle class="ring-fill" id="ring-fill" cx="100" cy="100" r="82" fill="none" stroke-width="14"
+              stroke-dasharray="515" stroke-dashoffset="515" stroke-linecap="round"/>
+          </svg>
+          <div class="score-center">
+            <span class="score-num" id="result-score">0</span>
+            <span class="score-denom">/ 20</span>
+          </div>
+        </div>
+        <div class="result-info">
+          <h2 class="result-title" id="result-title">¡Buen trabajo!</h2>
+          <p class="result-exam-name" id="result-exam-name">Examen 01</p>
+          <div class="result-chips">
+            <span class="chip chip-green" id="result-correct">✓ 0 Correctas</span>
+            <span class="chip chip-red" id="result-wrong">✗ 0 Incorrectas</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn-primary" id="btn-review">📋 Revisar Respuestas</button>
+        <button class="btn-outline" id="btn-retry">🔁 Repetir Examen</button>
+        <button class="btn-outline" id="btn-home">🏠 Ir al Inicio</button>
+      </div>
+
+      <div class="review-section" id="review-section" style="display:none">
+        <h3 class="section-title">Revisión Detallada</h3>
+        <div class="review-list" id="review-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm exit modal -->
+  <div id="modal-exit" class="modal-overlay" style="display:none">
+    <div class="modal-box glass">
+      <h3>¿Salir del examen?</h3>
+      <p>Perderás tu progreso actual en este examen.</p>
+      <div class="modal-actions">
+        <button class="btn-outline" id="modal-cancel">Continuar</button>
+        <button class="btn-danger" id="modal-confirm">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
