@@ -555,3 +555,83 @@ h1 {
 .exam-card:nth-child(18) { animation-delay: 0.54s; }
 .exam-card:nth-child(19) { animation-delay: 0.57s; }
 .exam-card:nth-child(20) { animation-delay: 0.60s; }
+
+/* ════════ STUDY MODAL & LEARN BTN ════════ */
+.study-card {
+  max-width: 500px !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.study-header {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+.study-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background: var(--primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.study-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+#study-source {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+.study-body {
+  padding: 1.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+.study-footer {
+  padding: 1.5rem;
+}
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+.close-btn:hover { opacity: 1; }
+
+.btn-learn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.2s;
+}
+.btn-learn:hover {
+  background: var(--primary-glow);
+  border-color: transparent;
+  transform: translateY(-2px);
+}
+

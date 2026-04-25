@@ -18,6 +18,46 @@ const STOPWORDS = new Set([
   'del', 'al', 'se', 'me', 'te', 'nos', 'sus', 'mi', 'tu', 'su', 'como', 'cuando', 'donde', 'quien', 'porque', 'para', 'que', 'cual'
 ]);
 
+const NUMBER_MAP = {
+  '0': ['cero', 'zero', 'null'],
+  '1': ['uno', 'un', 'una', 'one', 'eins'],
+  '2': ['dos', 'two', 'zwei'],
+  '3': ['tres', 'three', 'drei'],
+  '4': ['cuatro', 'four', 'vier'],
+  '5': ['cinco', 'five', 'fünf', 'funf'],
+  '6': ['seis', 'six', 'sechs'],
+  '7': ['siete', 'seven', 'sieben'],
+  '8': ['ocho', 'eight', 'acht'],
+  '9': ['nueve', 'nine', 'neun'],
+  '10': ['diez', 'ten', 'zehn'],
+  '11': ['once', 'eleven', 'elf'],
+  '12': ['doce', 'twelve', 'zwölf', 'zwolf'],
+  '13': ['trece', 'thirteen', 'dreizehn'],
+  '14': ['catorce', 'fourteen', 'vierzehn'],
+  '15': ['quince', 'fifteen', 'fünfzehn', 'funfzehn'],
+  '16': ['dieciseis', 'sixteen', 'sechzehn'],
+  '17': ['diecisiete', 'seventeen', 'siebzehn'],
+  '18': ['dieciocho', 'eighteen', 'achtzehn'],
+  '19': ['diecinueve', 'nineteen', 'neunzehn'],
+  '20': ['veinte', 'twenty', 'zwanzig']
+};
+
+const NOISE_WORDS = new Set([
+  'dimension', 'dimensiones', 'punto', 'puntos', 'etapa', 'etapas', 'fase', 'fases', 'categoria', 'categorias',
+  'nivel', 'niveles', 'tipo', 'tipos', 'año', 'años', 'ano', 'anos'
+]);
+
+const SEMANTIC_MAP = {
+  'ambiente': ['entorno', 'medioambiente', 'naturaleza', 'ecosistema', 'environment'],
+  'sostenible': ['sustentable', 'perdurable', 'sustainable'],
+  'integral': ['completo', 'total', 'holistico', 'holistic'],
+  'biotica': ['viva', 'viviente', 'biotico', 'biotic'],
+  'abiotica': ['no viva', 'inerte', 'fisico', 'abiotico', 'abiotic'],
+  'social': ['comunitario', 'sociedad'],
+  'economico': ['financiero', 'monetario'],
+  'pilar': ['base', 'fundamento', 'eje']
+};
+
 const $ = id => document.getElementById(id);
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -36,7 +76,7 @@ function normalize(str) {
 
 function getKeywords(str) {
   const words = normalize(str).split(/\s+/);
-  return words.filter(w => w.length > 2 && !STOPWORDS.has(w));
+  return words.filter(w => (w.length > 2 || /\d/.test(w)) && !STOPWORDS.has(w));
 }
 
 function getLevenshteinDistance(a, b) {
@@ -63,19 +103,88 @@ function checkSimilarity(typed, expected) {
   if (!typed) return 0;
   const cleanTyped = normalize(typed);
   const cleanExpected = normalize(expected);
+  
   if (cleanTyped === cleanExpected) return 1.0;
-  const userKeywords = getKeywords(typed);
+
+  // Function to extract numbers (including words)
+  const extractNumbers = (str) => {
+    const words = normalize(str).split(/\s+/);
+    const nums = [];
+    words.forEach(w => {
+      if (/^\d+$/.test(w)) nums.push(w);
+      else {
+        for (const [val, aliases] of Object.entries(NUMBER_MAP)) {
+          if (aliases.includes(w)) { nums.push(val); break; }
+        }
+      }
+    });
+    return nums;
+  };
+
+  const typedNums = extractNumbers(typed);
+  const expectedNums = extractNumbers(expected);
+
+  // If there's a numeric mismatch, it's likely wrong
+  if (expectedNums.length > 0 && typedNums.length > 0) {
+    const allMatch = expectedNums.every(n => typedNums.includes(n));
+    if (allMatch && typedNums.length === expectedNums.length) {
+      // If the answer is just the number, and it matches, it's correct
+      if (normalize(typed).length < 5) return 1.0;
+    }
+  }
+
+  const userWords = cleanTyped.split(/\s+/);
   const targetKeywords = getKeywords(expected);
+  
   if (targetKeywords.length === 0) return getFuzzySimilarity(cleanTyped, cleanExpected);
+
   let matchCount = 0;
+  let importantMatchCount = 0;
+  
   targetKeywords.forEach(targetW => {
-    const hasMatch = userKeywords.some(userW => userW === targetW || getFuzzySimilarity(userW, targetW) > 0.75);
-    if (hasMatch) matchCount++;
+    const isNoise = NOISE_WORDS.has(targetW);
+    
+    // Determine numeric root if applicable
+    let numericRoot = null;
+    for (const [val, aliases] of Object.entries(NUMBER_MAP)) {
+      if (targetW === val || aliases.includes(targetW)) { numericRoot = val; break; }
+    }
+
+    const hasMatch = userWords.some(userW => {
+      // 1. Direct or Fuzzy Match
+      if (userW === targetW || getFuzzySimilarity(userW, targetW) > 0.85) return true;
+      
+      // 2. Numeric Equivalence
+      if (numericRoot) {
+        if (userW === numericRoot || (NUMBER_MAP[numericRoot] && NUMBER_MAP[numericRoot].includes(userW))) return true;
+      }
+
+      // 3. Synonym Match
+      for (const [key, aliases] of Object.entries(SEMANTIC_MAP)) {
+        if ((targetW === key || aliases.includes(targetW)) && (userW === key || aliases.includes(userW))) return true;
+      }
+
+      return false;
+    });
+
+    if (hasMatch) {
+      matchCount++;
+      if (!isNoise) importantMatchCount++;
+    }
   });
+
+  const importantKeywords = targetKeywords.filter(w => !NOISE_WORDS.has(w));
+  const importantScore = importantKeywords.length > 0 ? importantMatchCount / importantKeywords.length : 1.0;
   const keywordScore = matchCount / targetKeywords.length;
+  
+  // If all important words match, it's correct
+  if (importantScore >= 0.99) return 1.0;
+  
   const characterScore = getFuzzySimilarity(cleanTyped, cleanExpected);
-  if (keywordScore >= 0.8) return 1.0;
-  return (keywordScore * 0.85) + (characterScore * 0.15);
+  
+  // Weighted blend
+  const finalScore = (importantScore * 0.7) + (keywordScore * 0.2) + (characterScore * 0.1);
+  return Math.min(1.0, finalScore);
 }
 
 function renderHome() {
@@ -218,12 +327,44 @@ function renderReview() {
   list.innerHTML = '';
   exam.questions.forEach((q, i) => {
     const correctText = q.opts[q.a], typed = STATE.userAnswers[i], similarity = checkSimilarity(typed, correctText), isCorrect = similarity >= 0.5;
+    const studyBtn = q.ref ? `
+      <button class="btn-learn" onclick="showStudyModal('${q.ref}')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a4 4 0 0 0-4-4H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a4 4 0 0 1 4-4h6z"/></svg>
+        Ver Fundamento / Aprender
+      </button>` : '';
+
     const item = document.createElement('div');
     item.className = `review-item ${isCorrect ? 'rv-correct' : 'rv-wrong'}`;
-    item.innerHTML = `<div class="rv-header"><span class="rv-num">${i + 1}.</span><span class="rv-q">${q.question || q.q}</span></div><div class="rv-answers"><div class="rv-ans"><span class="lbl">Tu respuesta:</span><span class="${isCorrect ? 'val-correct' : 'val-wrong'}">${typed || '(Sin respuesta)'}</span></div>${!isCorrect ? `<div class="rv-ans"><span class="lbl">Respuesta aceptable:</span><span class="val-correct">✓ ${correctText}</span></div>` : ''}<div class="rv-ans"><span class="lbl">Afinidad Conceptual:</span><span class="val-muted" style="color:var(--text-muted); font-size: 0.7rem;">${Math.round(similarity * 100)}%</span></div></div>`;
+    item.innerHTML = `
+      <div class="rv-header"><span class="rv-num">${i + 1}.</span><span class="rv-q">${q.question || q.q}</span></div>
+      <div class="rv-answers">
+        <div class="rv-ans"><span class="lbl">Tu respuesta:</span><span class="${isCorrect ? 'val-correct' : 'val-wrong'}">${typed || '(Sin respuesta)'}</span></div>
+        ${!isCorrect ? `<div class="rv-ans"><span class="lbl">Respuesta aceptable:</span><span class="val-correct">✓ ${correctText}</span></div>` : ''}
+        <div class="rv-ans"><span class="lbl">Afinidad Conceptual:</span><span class="val-muted" style="color:var(--text-muted); font-size: 0.7rem;">${Math.round(similarity * 100)}%</span></div>
+        ${studyBtn}
+      </div>`;
     list.appendChild(item);
   });
 }
 
+// ════════ STUDY MODAL ════════
+function showStudyModal(refKey) {
+  const data = STUDY_CONTENT[refKey];
+  if (!data) return;
+  $('study-title').textContent = data.title;
+  $('study-source').textContent = data.source;
+  $('study-content').textContent = data.content;
+  $('modal-study').style.display = 'flex';
+}
+function closeStudyModal() { $('modal-study').style.display = 'none'; }
+
+
 renderHome();
 showScreen('home');
+
+// Study Modal listeners
+document.addEventListener('DOMContentLoaded', () => {
+  $('study-close').onclick = closeStudyModal;
+  $('study-btn-ok').onclick = closeStudyModal;
+  $('modal-study').onclick = (e) => { if (e.target === $('modal-study')) closeStudyModal(); };
+});
